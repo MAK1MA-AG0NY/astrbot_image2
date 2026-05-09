@@ -1,0 +1,10 @@
+name: astrbot_plugin_gpt_image2
+display_name: gpt-image-2 画图
+desc: 通过 gpt-image-2 生成图片并回发到 OneBot/NapCat QQ
+help: 使用 /draw <描述词> 生成图片；回复图片时会自动切换为图片编辑模式
+version: v0.1.1
+author: makima
+repo: local
+support_platforms:
+  - aiocqhttp
+astrbot_version: ">=4.16"

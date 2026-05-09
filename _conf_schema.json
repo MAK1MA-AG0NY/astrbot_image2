@@ -1,0 +1,55 @@
+{
+  "base_url": {
+    "description": "基础地址",
+    "hint": "例如 https://right.codes/gpt",
+    "type": "string",
+    "default": ""
+  },
+  "image_api_url": {
+    "description": "图片生成接口地址",
+    "hint": "可留空；留空时自动拼接 base_url + /v1/images/generations",
+    "type": "string",
+    "default": ""
+  },
+  "image_edit_api_url": {
+    "description": "图片编辑接口地址",
+    "hint": "可留空；留空时自动拼接 base_url + /v1/images/edits",
+    "type": "string",
+    "default": ""
+  },
+  "api_key": {
+    "description": "API Key",
+    "hint": "填写 Right Code 生成的密钥",
+    "type": "string",
+    "default": "",
+    "obvious_hint": true
+  },
+  "model": {
+    "description": "模型名",
+    "type": "string",
+    "default": "gpt-image-2"
+  },
+  "auth_header": {
+    "description": "鉴权头",
+    "type": "string",
+    "options": ["Authorization", "x-api-key"],
+    "default": "Authorization"
+  },
+  "timeout_seconds": {
+    "description": "请求超时（秒）",
+    "type": "int",
+    "default": 180
+  },
+  "retry_times": {
+    "description": "失败重试次数",
+    "hint": "接口偶发超时或网络抖动时自动重试",
+    "type": "int",
+    "default": 1
+  },
+  "proxy": {
+    "description": "代理地址",
+    "hint": "可选，例如 http://127.0.0.1:7890",
+    "type": "string",
+    "default": ""
+  }
+}
