@@ -32,13 +32,26 @@ class RightCodeScriptRunner:
         return python_executable or sys.executable
 
     def _script_path(self) -> Path:
-        script_path = str(self._get("script_path", "rcode_draw.py")).strip()
-        path = Path(os.path.expanduser(script_path))
-        if not path.is_absolute():
-            path = self._plugin_dir / path
-        if not path.is_file():
-            raise FileNotFoundError(f"脚本不存在: {path}")
-        return path
+        candidates: list[Path] = []
+
+        bundled = self._plugin_dir / "rcode_draw.py"
+        candidates.append(bundled)
+
+        script_path = str(self._get("script_path", "")).strip()
+        if script_path:
+            path = Path(os.path.expanduser(script_path))
+            if not path.is_absolute():
+                path = self._plugin_dir / path
+            candidates.append(path)
+
+        for candidate in candidates:
+            if candidate.is_file():
+                return candidate
+
+        raise FileNotFoundError(
+            "脚本不存在: 已尝试插件目录内置脚本和配置 script_path，"
+            f"候选项: {', '.join(str(path) for path in candidates)}"
+        )
 
     def _api_key(self) -> str:
         api_key = str(self._get("api_key", "")).strip()
