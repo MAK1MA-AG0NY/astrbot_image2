@@ -16,7 +16,7 @@
 ## Config
 
 ### `script_path`
-脚本路径，默认使用插件目录下的 `rcode_draw.py`
+可选覆盖脚本路径。默认自动使用插件目录下的 `rcode_draw.py`，也可填写绝对路径。
 
 ### `python_executable`
 Python 解释器路径。留空时使用当前 AstrBot 的 Python。

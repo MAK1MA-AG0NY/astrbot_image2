@@ -1,9 +1,9 @@
 {
   "script_path": {
     "description": "脚本路径",
-    "hint": "默认使用插件目录下的 rcode_draw.py；也可填写绝对路径",
+    "hint": "可选覆盖；默认自动使用插件目录下的 rcode_draw.py，也可填写绝对路径",
     "type": "string",
-    "default": "rcode_draw.py"
+    "default": ""
   },
   "python_executable": {
     "description": "Python 解释器",
