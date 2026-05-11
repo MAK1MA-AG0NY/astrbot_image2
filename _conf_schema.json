@@ -1,31 +1,19 @@
 {
-  "base_url": {
-    "description": "基础地址",
-    "hint": "例如 https://right.codes/gpt",
+  "script_path": {
+    "description": "脚本路径",
+    "hint": "默认使用插件目录下的 rcode_draw.py；也可填写绝对路径",
     "type": "string",
-    "default": ""
+    "default": "rcode_draw.py"
   },
-  "image_api_url": {
-    "description": "图片生成接口地址",
-    "hint": "可留空；留空时自动拼接 base_url + /v1/images/generations",
-    "type": "string",
-    "default": ""
-  },
-  "chat_api_url": {
-    "description": "图文聊天接口地址",
-    "hint": "可留空；留空时自动拼接 base_url + /v1/chat/completions",
-    "type": "string",
-    "default": ""
-  },
-  "image_edit_api_url": {
-    "description": "图片编辑接口地址",
-    "hint": "可留空；留空时自动拼接 base_url + /v1/images/edits",
+  "python_executable": {
+    "description": "Python 解释器",
+    "hint": "默认使用当前 AstrBot 进程的 python",
     "type": "string",
     "default": ""
   },
   "api_key": {
     "description": "API Key",
-    "hint": "填写 Right Code 生成的密钥",
+    "hint": "优先填写 Right Code 的密钥；也兼容环境变量 right_code_image2",
     "type": "string",
     "default": "",
     "obvious_hint": true
@@ -37,38 +25,25 @@
   },
   "size": {
     "description": "图片尺寸",
-    "hint": "例如 1024x1024；与 Right Code 新文档一致",
-    "type": "string",
-    "default": "1024x1024"
-  },
-  "response_format": {
-    "description": "返回格式",
-    "hint": "通常填写 url；若供应商返回 base64 也会自动兼容",
-    "type": "string",
-    "options": ["url", "b64_json"],
-    "default": "url"
-  },
-  "auth_header": {
-    "description": "鉴权头",
-    "type": "string",
-    "options": ["Authorization", "x-api-key"],
-    "default": "Authorization"
-  },
-  "timeout_seconds": {
-    "description": "请求超时（秒）",
-    "type": "int",
-    "default": 180
-  },
-  "retry_times": {
-    "description": "失败重试次数",
-    "hint": "接口偶发超时或网络抖动时自动重试",
-    "type": "int",
-    "default": 1
-  },
-  "proxy": {
-    "description": "代理地址",
-    "hint": "可选，例如 http://127.0.0.1:7890",
+    "hint": "例如 1024x1024；留空则不传",
     "type": "string",
     "default": ""
+  },
+  "output": {
+    "description": "输出文件路径",
+    "hint": "留空则走脚本默认保存目录；填入文件路径可指定保存位置",
+    "type": "string",
+    "default": ""
+  },
+  "keep_url": {
+    "description": "仅保留 URL",
+    "hint": "开启后直接返回图片 URL，不下载到本地",
+    "type": "bool",
+    "default": false
+  },
+  "timeout_seconds": {
+    "description": "脚本执行超时（秒）",
+    "type": "int",
+    "default": 180
   }
 }
