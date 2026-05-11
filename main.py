@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import json
+import re
 import uuid
 from pathlib import Path
 from typing import Any
@@ -36,6 +38,12 @@ class RightCodeDrawClient:
         if api_url:
             return api_url
         return f"{self._base_url()}/v1/images/generations"
+
+    def _chat_endpoint(self) -> str:
+        api_url = str(self._get("chat_api_url", "")).strip()
+        if api_url:
+            return api_url
+        return f"{self._base_url()}/v1/chat/completions"
 
     def _api_key(self) -> str:
         api_key = str(self._get("api_key", "")).strip()
@@ -91,20 +99,54 @@ class RightCodeDrawClient:
         return image_ref
 
     async def generate(self, prompt: str, image_refs: list[str] | None = None) -> str:
+        if image_refs:
+            return await self._generate_with_chat(prompt, image_refs)
+        return await self._generate_with_images(prompt)
+
+    async def _generate_with_images(self, prompt: str) -> str:
         payload: dict[str, Any] = {
             "model": self._model(),
             "prompt": prompt,
             "size": self._size(),
             "response_format": self._response_format(),
         }
-        if image_refs:
-            payload["image"] = [self._serialize_image_ref(ref) for ref in image_refs if ref]
 
         async with httpx.AsyncClient(timeout=self._timeout(), proxy=self._proxy()) as client:
             response = await self._post_with_retry(client, self._endpoint(), json=payload)
             data = self._parse_json(response, "生成")
 
         return self._extract_image_output(data)
+
+    async def _generate_with_chat(self, prompt: str, image_refs: list[str]) -> str:
+        payload: dict[str, Any] = {
+            "model": self._model(),
+            "stream": True,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": self._build_chat_content(prompt, image_refs),
+                }
+            ],
+        }
+
+        async with httpx.AsyncClient(timeout=self._timeout(), proxy=self._proxy()) as client:
+            response_text = await self._stream_chat_completion(client, payload)
+
+        image_output = self._extract_image_output_from_text(response_text)
+        if image_output:
+            return image_output
+        raise RuntimeError(f"chat/completions 未返回可识别的图片内容：{response_text[:500]}")
+
+    def _build_chat_content(self, prompt: str, image_refs: list[str]) -> list[dict[str, Any]]:
+        content: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
+        for image_ref in image_refs:
+            content.append(
+                {
+                    "type": "image_url",
+                    "image_url": {"url": self._serialize_image_ref(image_ref)},
+                }
+            )
+        return content
 
     async def _post_with_retry(self, client: httpx.AsyncClient, url: str, **kwargs: Any) -> httpx.Response:
         retry_times = self._retry_times()
@@ -126,6 +168,68 @@ class RightCodeDrawClient:
                 await asyncio.sleep(min(2.0, attempt + 1))
 
         raise RuntimeError(f"生成请求失败：{last_error}") from last_error
+
+    async def _stream_chat_completion(
+        self,
+        client: httpx.AsyncClient,
+        payload: dict[str, Any],
+    ) -> str:
+        retry_times = self._retry_times()
+        last_error: Exception | None = None
+
+        for attempt in range(retry_times + 1):
+            try:
+                async with client.stream(
+                    "POST",
+                    self._chat_endpoint(),
+                    headers=self._auth_headers(),
+                    json=payload,
+                ) as response:
+                    if response.status_code >= 400:
+                        body_text = await response.aread()
+                        text = body_text.decode(errors="replace")
+                        logger.error(
+                            "chat接口失败: status=%s url=%s content_type=%s body=%s",
+                            response.status_code,
+                            str(response.request.url),
+                            response.headers.get("content-type", ""),
+                            text[:2000],
+                        )
+                        raise RuntimeError(f"chat接口返回 {response.status_code}")
+
+                    chunks: list[str] = []
+                    async for line in response.aiter_lines():
+                        if not line:
+                            continue
+                        if not line.startswith("data:"):
+                            continue
+                        data = line.removeprefix("data:").strip()
+                        if data == "[DONE]":
+                            break
+                        try:
+                            chunk = json.loads(data)
+                        except Exception:
+                            continue
+                        delta = self._find_first_value(chunk, "delta")
+                        if isinstance(delta, dict):
+                            content = delta.get("content")
+                            if isinstance(content, str) and content:
+                                chunks.append(content)
+
+                    return "".join(chunks).strip()
+            except (httpx.TimeoutException, httpx.RequestError) as exc:
+                last_error = exc
+                if attempt >= retry_times:
+                    break
+                logger.warning(
+                    "chat请求失败，准备重试 (%s/%s): %s",
+                    attempt + 1,
+                    retry_times + 1,
+                    exc,
+                )
+                await asyncio.sleep(min(2.0, attempt + 1))
+
+        raise RuntimeError(f"chat请求失败：{last_error}") from last_error
 
     def _parse_json(self, response: httpx.Response, action: str) -> Any:
         request_url = str(response.request.url)
@@ -167,6 +271,28 @@ class RightCodeDrawClient:
             return self._save_b64_image(image_b64)
 
         raise RuntimeError("接口返回中未找到图片结果")
+
+    def _extract_image_output_from_text(self, text: str) -> str | None:
+        text = text.strip()
+        if not text:
+            return None
+
+        markdown_match = re.search(r"!\[[^\]]*\]\(([^)]+)\)", text)
+        if markdown_match:
+            candidate = markdown_match.group(1).strip()
+            return self._normalize_image_candidate(candidate)
+
+        return self._normalize_image_candidate(text)
+
+    def _normalize_image_candidate(self, candidate: str) -> str | None:
+        candidate = candidate.strip().strip("`")
+        if candidate.startswith("data:image/"):
+            return self._save_b64_image(candidate.split(",", 1)[-1])
+        if candidate.startswith(("http://", "https://")):
+            return candidate
+        if candidate.startswith("base64://"):
+            return self._save_b64_image(candidate.removeprefix("base64://"))
+        return None
 
     def _find_first_value(self, node: Any, key: str) -> Any:
         if isinstance(node, dict):

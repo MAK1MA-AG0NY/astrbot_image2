@@ -5,7 +5,7 @@
 ## Features
 
 - **文生图**：直接发送 `/draw 描述词` 即可生成图片。
-- **图片编辑**：如果你的消息是“回复了一张图片”再发送 `/draw 描述词`，插件会自动把引用图作为参考图传给接口。
+- **图文分流**：如果你的消息是“回复了一张图片”再发送 `/draw 描述词`，插件会自动改走 `chat/completions`，让图片和文字一起进入上游模型。
 - **自动结果处理**：兼容 `b64_json` 与 `url` 两种返回形式；优先用 `url`，否则落盘 base64。
 - **更稳的错误输出**：会把上游响应状态码、URL、Content-Type 和响应体片段打印到日志里，方便排障。
 - **失败重试**：网络抖动或偶发超时时可自动重试。
@@ -19,7 +19,7 @@
 ## Usage
 
 - `/draw 描述词` → 文生图
-- 回复一张图片后再发送 `/draw 描述词` → 图片编辑
+- 回复一张图片后再发送 `/draw 描述词` → 图文联合出图（chat/completions）
 
 ## Safety & Anti-mistake Mechanisms
 
@@ -39,8 +39,11 @@
 ### `image_api_url`
 图片生成接口地址。留空时自动拼接为：`{base_url}/v1/images/generations`
 
+### `chat_api_url`
+图文聊天接口地址。留空时自动拼接为：`{base_url}/v1/chat/completions`
+
 ### `image_edit_api_url`
-图片编辑接口地址。**当前框架默认不单独调用它**，而是把回复图作为 `image` 传入 `/v1/images/generations`；保留该项仅用于兼容未来切换。
+图片编辑接口地址。保留作兼容项，当前插件默认不直接调用。
 
 ### `api_key`
 你的供应商 API Key。

@@ -11,6 +11,12 @@
     "type": "string",
     "default": ""
   },
+  "chat_api_url": {
+    "description": "图文聊天接口地址",
+    "hint": "可留空；留空时自动拼接 base_url + /v1/chat/completions",
+    "type": "string",
+    "default": ""
+  },
   "image_edit_api_url": {
     "description": "图片编辑接口地址",
     "hint": "可留空；留空时自动拼接 base_url + /v1/images/edits",
