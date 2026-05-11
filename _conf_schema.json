@@ -29,6 +29,19 @@
     "type": "string",
     "default": "gpt-image-2"
   },
+  "size": {
+    "description": "图片尺寸",
+    "hint": "例如 1024x1024；与 Right Code 新文档一致",
+    "type": "string",
+    "default": "1024x1024"
+  },
+  "response_format": {
+    "description": "返回格式",
+    "hint": "通常填写 url；若供应商返回 base64 也会自动兼容",
+    "type": "string",
+    "options": ["url", "b64_json"],
+    "default": "url"
+  },
   "auth_header": {
     "description": "鉴权头",
     "type": "string",
