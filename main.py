@@ -10,7 +10,7 @@ import httpx
 
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, filter
-from astrbot.api.message_components import Reply
+from astrbot.api.message_components import Image, Reply
 from astrbot.api.star import Context, Star
 from astrbot.core.config.astrbot_config import AstrBotConfig
 from astrbot.core.utils.astrbot_path import get_astrbot_plugin_data_path
